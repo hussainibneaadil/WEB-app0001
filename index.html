@@ -1,0 +1,3739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant POS System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #004d00, #003300);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .time-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+
+        /* Settings Menu Styles */
+        .settings-menu {
+            position: relative;
+        }
+
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            width: 300px;
+            display: none;
+            z-index: 1000;
+            border: 1px solid #dee2e6;
+            overflow: hidden;
+        }
+
+        .settings-dropdown.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .settings-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .settings-item:hover {
+            background: #f8f9fa;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item i {
+            color: #006600;
+            width: 20px;
+        }
+
+        .settings-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+
+        .tab.active {
+            background-color: #006600;
+            color: white;
+            border-bottom: 3px solid #004d00;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .billing-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .items-panel {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .invoice-preview {
+            flex: 1;
+            min-width: 350px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+            position: relative;
+        }
+
+        .item-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .item-card:hover:not(.disabled) {
+            transform: translateY(-2px);
+            border-color: #006600;
+            box-shadow: 0 5px 15px rgba(0, 102, 0, 0.2);
+        }
+
+        .item-card h4 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .item-price {
+            color: #27ae60;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .item-category {
+            display: inline-block;
+            background: #f1f2f6;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 3px;
+        }
+
+        .item-remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .item-card:hover:not(.disabled) .item-remove-btn {
+            display: flex;
+        }
+
+        .out-of-stock {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .current-order {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            border: 1px solid #e9ecef;
+            position: relative;
+        }
+
+        .order-remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.6rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .order-item:hover .order-remove-btn {
+            display: flex;
+        }
+
+        .order-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-btn {
+            width: 25px;
+            height: 25px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .decrease {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .increase {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .invoice-header h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .invoice-details {
+            margin-bottom: 20px;
+        }
+
+        .invoice-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .invoice-row.total {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            border-top: 2px solid #dee2e6;
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #006600;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            background: #004d00;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        /* FIXED ADMIN SECTION ALIGNMENT */
+        .admin-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            align-items: start;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .dashboard-card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #006600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+
+        .stat-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            border-left: 4px solid #006600;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #006600, #00cc00);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .sales-chart {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: #006600;
+            border-radius: 3px;
+            min-height: 10px;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .chart-bar:hover::after {
+            content: attr(data-value);
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #006600;
+            box-shadow: 0 0 0 3px rgba(0, 102, 0, 0.1);
+        }
+
+        /* FIXED TABLE LAYOUT - PROPER ALIGNMENT */
+        .admin-table-container{
+            overflow-x: auto;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin-top: 15px;
+            max-height: 500px; /* Added to limit height */
+            overflow-y: auto; /* Added for vertical scrolling */
+        }
+
+        .admin-table{
+            width:100%;
+            border-collapse:collapse;
+            background:white;
+        }
+
+        .admin-table th {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-right: 1px solid #3a506b;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .admin-table th:last-child {
+            border-right: none;
+        }
+
+        .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+            vertical-align: middle;
+            border-right: 1px solid #eee;
+        }
+
+        .admin-table td:last-child {
+            border-right: none;
+        }
+
+        .admin-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Improved column widths for better alignment */
+        .admin-table th:nth-child(1), .admin-table td:nth-child(1) { 
+            width: 60px; 
+            text-align: center; 
+        }
+        .admin-table th:nth-child(2), .admin-table td:nth-child(2) { 
+            width: 200px; 
+            min-width: 150px;
+        }
+        .admin-table th:nth-child(3), .admin-table td:nth-child(3) { 
+            width: 120px; 
+            text-align: right; 
+            white-space: nowrap;
+        }
+        .admin-table th:nth-child(4), .admin-table td:nth-child(4) { 
+            width: 120px; 
+            text-align: center; 
+        }
+        .admin-table th:nth-child(5), .admin-table td:nth-child(5) { 
+            width: 100px; 
+            text-align: center; 
+        }
+        .admin-table th:nth-child(6), .admin-table td:nth-child(6) { 
+            width: 100px; 
+            text-align: center; 
+        }
+        .admin-table th:nth-child(7), .admin-table td:nth-child(7) { 
+            width: 100px; 
+            text-align: center; 
+        }
+        .admin-table th:nth-child(8), .admin-table td:nth-child(8) { 
+            width: 180px; 
+            text-align: center; 
+            min-width: 150px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .bill-history {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .bill-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #006600;
+            border: 1px solid #e9ecef;
+            transition: transform 0.3s ease;
+        }
+
+        .bill-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .bill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .bill-id {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .bill-total {
+            font-weight: bold;
+            color: #27ae60;
+            text-align: right;
+            margin-top: 8px;
+            font-size: 1.1rem;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .payment-btn {
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .payment-btn.active {
+            border-color: #006600;
+            background: #e8f5e8;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .inventory-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-height: 400px; /* Added to limit height */
+            overflow: hidden; /* Added to contain content */
+        }
+
+        .inventory-section h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #006600;
+        }
+
+        .inventory-table-container {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+
+        .analytics-section {
+            margin-top: 30px;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .analytics-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        .product-sales-table {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Custom payment item */
+        .custom-payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .custom-payment-input {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        /* Tax settings item */
+        .tax-settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .tax-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tax-input {
+            width: 80px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .tax-percent {
+            font-weight: bold;
+            color: #006600;
+            font-size: 1.1rem;
+        }
+
+        /* Chart containers */
+        .chart-container {
+            height: 200px;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 1100px) {
+            .billing-container {
+                flex-direction: column;
+            }
+            
+            .admin-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-card {
+                min-height: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .header-right {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .admin-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-card {
+                padding: 15px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        .currency {
+            font-family: Arial, sans-serif;
+        }
+        
+        /* SCROLLBAR STYLING */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #006600;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #004d00;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .status-instock {
+            background: #e8f5e8;
+            color: #27ae60;
+        }
+        
+        .status-lowstock {
+            background: #fef5e8;
+            color: #f39c12;
+        }
+        
+        .status-outstock {
+            background: #fde8e8;
+            color: #e74c3c;
+        }
+        
+        .category-badge {
+            background: #e8f5e8;
+            color: #006600;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+    </style>
+
+<style>
+/* Receipt Printer Friendly Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print, .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm !important;
+    font-family: monospace !important;
+    font-size: 11px !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 5px !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+  }
+  .receipt-print h2 {
+    text-align: center;
+    margin: 4px 0;
+    font-size: 14px !important;
+    font-weight: bold;
+  }
+  .receipt-line {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0 !important;
+  }
+  .receipt-divider {
+    border-top: 1px dashed #000;
+    margin: 4px 0 !important;
+  }
+  .receipt-text-center {
+    text-align: center !important;
+  }
+  .receipt-text-right {
+    text-align: right !important;
+  }
+  .receipt-bold {
+    font-weight: bold !important;
+  }
+  .receipt-small {
+    font-size: 9px !important;
+  }
+}
+.receipt-box {
+  width: 80mm;
+  background: #fff;
+  padding: 5px;
+  font-family: monospace;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  line-height: 1.2;
+}
+.receipt-box h2 {
+  text-align: center;
+  margin: 4px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+.receipt-divider {
+  border-top: 1px dashed #000;
+  margin: 4px 0;
+}
+.receipt-text-center {
+  text-align: center;
+}
+.receipt-text-right {
+  text-align: right;
+}
+.receipt-bold {
+  font-weight: bold;
+}
+.receipt-small {
+  font-size: 9px;
+}
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1 id="restaurantNameDisplay">Restaurant POS System</h1>
+                <div id="currentDateTime"></div>
+            </div>
+            <div class="header-right">
+                <div class="time-display" id="liveTime"></div>
+                <button class="btn btn-success" onclick="openBillSearch()">
+                    <i class="fas fa-search"></i> Search Bill
+                </button>
+                <!-- Settings Menu -->
+                <div class="settings-menu">
+                    <button class="settings-btn" onclick="toggleSettings()">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <div class="settings-item" onclick="openShopNameModal()">
+                            <i class="fas fa-store"></i>
+                            <div class="settings-label">Shop Name</div>
+                        </div>
+                        <div class="settings-item" onclick="openPaymentMethodsModal()">
+                            <i class="fas fa-credit-card"></i>
+                            <div class="settings-label">Payment Method</div>
+                        </div>
+                        <div class="settings-item" onclick="openTaxSettingsModal()">
+                            <i class="fas fa-percentage"></i>
+                            <div class="settings-label">Tax</div>
+                        </div>
+                        <div class="settings-item" onclick="openSalesTargetModal()">
+                            <i class="fas fa-bullseye"></i>
+                            <div class="settings-label">Sales Target</div>
+                        </div>
+                        <div class="settings-item" onclick="logout()" style="color: #e74c3c;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <div class="settings-label" style="color: #e74c3c;">Logout</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="billing">Billing</div>
+            <div class="tab" data-tab="admin">Admin</div>
+            <div class="tab" data-tab="analytics">Analytics</div>
+        </div>
+
+        <!-- Billing Screen -->
+        <div class="tab-content active" id="billing">
+            <div class="billing-container">
+                <div class="items-panel">
+                    <div class="search-box">
+                        <input type="text" id="itemSearch" class="search-input" placeholder="Search items..." onkeyup="searchItems()">
+                        <button class="btn" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="items-grid" id="itemsGrid">
+                        <div class="empty-state">
+                            <i class="fas fa-utensils"></i>
+                            <p>No items added yet. Add items in Admin panel.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="current-order">
+                        <h4 style="margin-bottom: 15px; color: #2c3e50;">Current Order</h4>
+                        <div id="currentOrder">
+                            <p style="color: #7f8c8d; text-align: center; padding: 20px;">No items added yet</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn btn-danger" id="clearOrder" style="flex: 1;">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                            <button class="btn" onclick="openCustomItemModal()" style="flex: 1; background: #f39c12; color: white;">
+                                <i class="fas fa-plus"></i> Custom Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="invoice-preview">
+                    <div class="invoice-header">
+                        <h3 id="invoiceRestaurantName">RESTAURANT INVOICE</h3>
+                        <p id="billNumber">Bill #1001</p>
+                        <p id="invoiceDate"></p>
+                    </div>
+                    
+                    <div class="invoice-details">
+                        <div id="invoiceItems">
+                            <!-- Invoice items loaded here -->
+                        </div>
+                        
+                        <div class="invoice-row">
+                            <span>Subtotal</span>
+                            <span id="subtotal">PKR 0.00</span>
+                        </div>
+                        <div class="invoice-row">
+                            <span id="taxLabel">Tax (5%)</span>
+                            <span id="tax">PKR 0.00</span>
+                        </div>
+                        <div class="invoice-row total">
+                            <span>TOTAL</span>
+                            <span id="total">PKR 0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-methods" id="paymentMethodsContainer">
+                        <!-- Payment methods loaded dynamically -->
+                    </div>
+                    
+                    <button class="btn btn-warning" onclick="printCurrentReceipt()" style="margin-bottom: 10px; width: 100%;">
+                        <i class="fas fa-print"></i> Print Receipt
+                    </button>
+                    <button class="btn btn-primary" id="generateBill">
+                        <i class="fas fa-save"></i> Generate Bill
+                    </button>
+                    <button class="btn btn-success" onclick="downloadSalesReportPDF()" style="margin-top: 10px; width: 100%;">
+                        <i class="fas fa-download"></i> Sales Report PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Portal -->
+        <div class="tab-content" id="admin">
+            <div class="admin-section">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Sales Dashboard</h3>
+                    <div class="stat-box">
+                        <div>
+                            <div class="stat-label">Today's Sales</div>
+                            <div class="stat-value" id="todaySales">PKR 0.00</div>
+                        </div>
+                        <i class="fas fa-chart-line" style="font-size: 1.5rem; color: #27ae60;"></i>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div>
+                            <div class="stat-label">Today's Bills</div>
+                            <div class="stat-value" id="todayBills">0</div>
+                        </div>
+                        <i class="fas fa-receipt" style="font-size: 1.5rem; color: #006600;"></i>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div>
+                            <div class="stat-label">Most Sold Item</div>
+                            <div class="stat-value" id="mostSoldItem">-</div>
+                        </div>
+                        <i class="fas fa-star" style="font-size: 1.5rem; color: #f39c12;"></i>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #2c3e50;">
+                            <span>Daily Target: <span id="dailyTargetDisplay">PKR 10,000</span></span>
+                            <span id="targetProgress">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="dailyProgress" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-edit"></i> Item Management</h3>
+                    <form id="itemForm">
+                        <div class="form-group">
+                            <label for="itemName">Item Name</label>
+                            <input type="text" id="itemName" class="form-control" required placeholder="Enter item name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="itemPrice">Price (PKR)</label>
+                            <input type="number" id="itemPrice" class="form-control" step="0.01" required placeholder="Enter price">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="itemCategory">Category</label>
+                            <select id="itemCategory" class="form-control">
+                                <option value="Food">Food</option>
+                                <option value="Beverage">Beverage</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Appetizer">Appetizer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="itemStock">Initial Stock</label>
+                            <input type="number" id="itemStock" class="form-control" value="0" placeholder="Enter stock quantity">
+                        </div>
+                        
+                        <input type="hidden" id="editingItemId" value="">
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;" id="submitBtn">
+                                <i class="fas fa-save"></i> Add Item
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="cancelEdit()" style="flex: 1; display: none;" id="cancelBtn">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="inventory-section">
+                        <h4><i class="fas fa-box"></i> Inventory Management</h4>
+                        <div class="inventory-table-container" id="inventoryList">
+                            <div class="empty-state" style="padding: 20px;">
+                                <i class="fas fa-box"></i>
+                                <p>No inventory items yet. Add items first.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-list-alt"></i> All Menu Items</h3>
+                    <div class="admin-table-container" id="allItemsTable">
+                        <div class="empty-state">
+                            <i class="fas fa-utensils"></i>
+                            <p>No menu items added yet. Add items above.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="tab-content" id="analytics">
+<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="btn btn-primary" onclick="downloadSalesReportPDF()">
+        <i class="fas fa-file-pdf"></i> Download Sales Report (PDF)
+    </button>
+    <button class="btn btn-warning" onclick="printSalesReport()" style="margin-left: 10px;">
+        <i class="fas fa-print"></i> Print Sales Report
+    </button>
+</div>
+            <div class="search-box">
+                <input type="text" id="billSearchInput" class="search-input" placeholder="Search bill by number...">
+                <button class="btn btn-primary" onclick="searchBillByNumber()">
+                    <i class="fas fa-search"></i> Search Bill
+                </button>
+                <button class="btn" onclick="clearBillSearch()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+            
+            <div id="searchResults">
+                <!-- Search results will appear here -->
+            </div>
+            
+            <div class="analytics-section">
+                <h3 style="margin-bottom: 20px; color: #2c3e50;"><i class="fas fa-chart-bar"></i> Sales Analytics</h3>
+                
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h4><i class="fas fa-chart-pie"></i> Sales by Category</h4>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card">
+                        <h4><i class="fas fa-chart-bar"></i> Weekly Sales Chart</h4>
+                        <div class="chart-container">
+                            <canvas id="weeklySalesChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card">
+                        <h4><i class="fas fa-credit-card"></i> Payment Method Usage</h4>
+                        <div class="chart-container">
+                            <canvas id="paymentChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analytics-card" style="margin-top: 20px;">
+                    <h4><i class="fas fa-list-ol"></i> Top Selling Products</h4>
+                    <div class="product-sales-table" id="topProductsTable">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line"></i>
+                            <p>Product sales data will appear here</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analytics-card" style="margin-top: 20px;">
+                    <h4><i class="fas fa-money-bill-wave"></i> Recent Transactions</h4>
+                    <div class="bill-history" id="recentBills">
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <p>No transactions yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div class="modal" id="customItemModal">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 20px; color: #2c3e50;">Add Custom Item</h3>
+                <form id="customItemForm">
+                    <div class="form-group">
+                        <label for="customItemName">Item Name</label>
+                            <input type="text" id="customItemName" class="form-control" required placeholder="Enter item name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="customItemPrice">Price (PKR)</label>
+                            <input type="number" id="customItemPrice" class="form-control" step="0.01" required placeholder="Enter price">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="customItemQuantity">Quantity</label>
+                            <input type="number" id="customItemQuantity" class="form-control" value="1" min="1">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-danger" onclick="closeModal('customItemModal')" style="flex: 1;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                Add to Bill
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal" id="confirmDeleteModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Confirm Delete</h3>
+                    <p id="deleteMessage">Are you sure you want to delete this item?</p>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete()" style="flex: 1;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        <button type="button" class="btn" onclick="closeModal('confirmDeleteModal')" style="flex: 1; background: #7f8c8d; color: white;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal" id="addInventoryModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Add Inventory</h3>
+                    <form id="addInventoryForm">
+                        <div class="form-group">
+                            <label for="inventoryItemSelect">Select Item</label>
+                            <select id="inventoryItemSelect" class="form-control">
+                                <!-- Items will be loaded here -->
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="inventoryQuantity">Quantity to Add</label>
+                            <input type="number" id="inventoryQuantity" class="form-control" value="0" min="1">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-danger" onclick="closeModal('addInventoryModal')" style="flex: 1;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                <i class="fas fa-plus"></i> Add Inventory
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal" id="editItemModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Edit Menu Item</h3>
+                    <form id="editItemForm">
+                        <input type="hidden" id="editItemId">
+                        
+                        <div class="form-group">
+                            <label for="modalItemName">Item Name</label>
+                            <input type="text" id="modalItemName" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modalItemPrice">Price (PKR)</label>
+                            <input type="number" id="modalItemPrice" class="form-control" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modalItemCategory">Category</label>
+                            <select id="modalItemCategory" class="form-control">
+                                <option value="Food">Food</option>
+                                <option value="Beverage">Beverage</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Appetizer">Appetizer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modalItemStock">Current Stock</label>
+                            <input type="number" id="modalItemStock" class="form-control">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn btn-danger" onclick="closeModal('editItemModal')" style="flex: 1;">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Shop Name Modal -->
+            <div class="modal" id="shopNameModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Change Restaurant Name</h3>
+                    <div class="form-group">
+                        <label for="restaurantName">Restaurant Name</label>
+                        <input type="text" id="restaurantName" class="form-control" placeholder="Enter restaurant name">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-danger" onclick="closeModal('shopNameModal')" style="flex: 1;">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveRestaurantName()" style="flex: 1;">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Methods Modal -->
+            <div class="modal" id="paymentMethodsModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Manage Payment Methods</h3>
+                    
+                    <div id="customPaymentList">
+                        <!-- Payment methods will be loaded here -->
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="newPaymentMethod">Add New Payment Method</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newPaymentMethod" class="form-control" placeholder="Enter payment method name">
+                            <button class="btn btn-primary" onclick="addCustomPayment()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button type="button" class="btn" onclick="closeModal('paymentMethodsModal')" style="width: 100%; background: #7f8c8d; color: white;">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tax Settings Modal -->
+            <div class="modal" id="taxSettingsModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Tax Settings</h3>
+                    
+                    <div id="taxSettingsList">
+                        <!-- Tax settings will be loaded here -->
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="newTaxRate">Add New Tax Rate</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="newTaxRate" class="form-control" placeholder="Enter tax percentage" min="0" max="100" step="0.1">
+                            <span style="font-weight: bold; color: #006600;">%</span>
+                            <button class="btn btn-primary" onclick="addTaxRate()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button type="button" class="btn" onclick="closeModal('taxSettingsModal')" style="width: 100%; background: #7f8c8d; color: white;">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Target Modal -->
+            <div class="modal" id="salesTargetModal">
+                <div class="modal-content">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">Set Daily Sales Target</h3>
+                    <div class="form-group">
+                        <label for="dailyTargetInput">Daily Target (PKR)</label>
+                        <input type="number" id="dailyTargetInput" class="form-control" placeholder="Enter daily sales target" min="0" step="100">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-danger" onclick="closeModal('salesTargetModal')" style="flex: 1;">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveDailyTarget()" style="flex: 1;">
+                            <i class="fas fa-save"></i> Save Target
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification" id="notification"></div>
+        </div>
+
+        <script>
+            // Initialize database with EMPTY data - NO SAMPLE DATA
+            let database = {
+                items: [],
+                bills: [],
+                currentBillNumber: 1001,
+                todaySales: 0,
+                todayBills: 0,
+                dailyTarget: 10000,
+                weeklySales: [0, 0, 0, 0, 0, 0, 0], // Monday to Sunday - ALL ZERO
+                categorySales: {},
+                productSales: {},
+                restaurantName: "Restaurant POS System",
+                customPaymentMethods: ["cash", "card", "bank transfer", "easypaisa"],
+                taxRates: [5],
+                currentTaxRate: 5
+            };
+
+            // Chart instances
+            let categoryChart = null;
+            let weeklySalesChart = null;
+            let paymentChart = null;
+
+            // Current order
+            let currentOrder = [];
+            let currentPaymentMethod = 'cash';
+            let itemToDelete = null;
+
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab).classList.add('active');
+                    
+                    if (tab.dataset.tab === 'admin') {
+                        updateAdminDashboard();
+                    } else if (tab.dataset.tab === 'analytics') {
+                        updateAnalytics();
+                        renderCharts();
+                    }
+                });
+            });
+
+            // Update date and time
+            function updateDateTime() {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-PK', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+                const timeStr = now.toLocaleTimeString('en-PK', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                
+                document.getElementById('currentDateTime').textContent = dateStr;
+                document.getElementById('liveTime').textContent = timeStr;
+                document.getElementById('invoiceDate').textContent = `${dateStr} ${timeStr}`;
+            }
+
+            // Show notification
+            function showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.style.background = type === 'success' ? '#2ecc71' : '#e74c3c';
+                notification.style.display = 'block';
+                
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+
+            // Format currency for Pakistan
+            function formatCurrency(amount) {
+                return 'PKR ' + amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+            }
+
+            // Format currency without PKR prefix for printing
+            function formatCurrencyForPrint(amount) {
+                return amount.toFixed(2);
+            }
+
+            // Toggle settings dropdown
+            function toggleSettings() {
+                const dropdown = document.getElementById('settingsDropdown');
+                dropdown.classList.toggle('show');
+            }
+
+            // Logout function
+            function logout() {
+                if (confirm('Are you sure you want to logout?')) {
+                    showNotification('Logged out successfully');
+                    document.getElementById('settingsDropdown').classList.remove('show');
+                    // Add your logout logic here
+                    // For now, just show notification
+                }
+            }
+
+            // Open shop name modal
+            function openShopNameModal() {
+                document.getElementById('restaurantName').value = database.restaurantName;
+                document.getElementById('shopNameModal').style.display = 'flex';
+                document.getElementById('settingsDropdown').classList.remove('show');
+            }
+
+            // Open sales target modal
+            function openSalesTargetModal() {
+                document.getElementById('dailyTargetInput').value = database.dailyTarget;
+                document.getElementById('salesTargetModal').style.display = 'flex';
+                document.getElementById('settingsDropdown').classList.remove('show');
+            }
+
+            // Save daily target
+            function saveDailyTarget() {
+                const target = parseFloat(document.getElementById('dailyTargetInput').value);
+                if (!isNaN(target) && target >= 0) {
+                    database.dailyTarget = target;
+                    updateAdminDashboard();
+                    showNotification(`Daily sales target set to ${formatCurrency(target)}`);
+                    closeModal('salesTargetModal');
+                } else {
+                    showNotification('Please enter a valid target amount', 'error');
+                }
+            }
+
+            // Save restaurant name
+            function saveRestaurantName() {
+                const newName = document.getElementById('restaurantName').value.trim();
+                if (newName) {
+                    database.restaurantName = newName;
+                    document.getElementById('restaurantNameDisplay').textContent = newName;
+                    document.getElementById('invoiceRestaurantName').textContent = newName.toUpperCase();
+                    showNotification('Restaurant name updated successfully');
+                    closeModal('shopNameModal');
+                } else {
+                    showNotification('Please enter a restaurant name', 'error');
+                }
+            }
+
+            // Open payment methods modal
+            function openPaymentMethodsModal() {
+                updateCustomPaymentList();
+                document.getElementById('paymentMethodsModal').style.display = 'flex';
+                document.getElementById('settingsDropdown').classList.remove('show');
+            }
+
+            // Update custom payment list
+            function updateCustomPaymentList() {
+                const paymentList = document.getElementById('customPaymentList');
+                paymentList.innerHTML = '';
+                
+                if (database.customPaymentMethods.length === 0) {
+                    paymentList.innerHTML = '<div class="empty-state"><p>No payment methods added</p></div>';
+                    return;
+                }
+                
+                database.customPaymentMethods.forEach((method, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'custom-payment-item';
+                    item.innerHTML = `
+                        <span style="font-weight: 600; color: #2c3e50;">${method.charAt(0).toUpperCase() + method.slice(1)}</span>
+                        <div>
+                            <button class="btn btn-danger" onclick="removePaymentMethod(${index})" style="padding: 5px 10px; font-size: 0.8rem;">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    `;
+                    paymentList.appendChild(item);
+                });
+            }
+
+            // Open tax settings modal
+            function openTaxSettingsModal() {
+                updateTaxSettingsList();
+                document.getElementById('taxSettingsModal').style.display = 'flex';
+                document.getElementById('settingsDropdown').classList.remove('show');
+            }
+
+            // Update tax settings list
+            function updateTaxSettingsList() {
+                const taxList = document.getElementById('taxSettingsList');
+                taxList.innerHTML = '';
+                
+                if (database.taxRates.length === 0) {
+                    taxList.innerHTML = '<div class="empty-state"><p>No tax rates added</p></div>';
+                    return;
+                }
+                
+                database.taxRates.forEach((taxRate, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'tax-settings-item';
+                    item.innerHTML = `
+                        <div>
+                            <span style="font-weight: 600; color: #2c3e50;">Tax Rate: </span>
+                            <span class="tax-percent">${taxRate}%</span>
+                            ${taxRate === database.currentTaxRate ? '<span style="margin-left: 10px; color: #006600; font-weight: bold; background: #e8f5e8; padding: 2px 8px; border-radius: 4px;">Active</span>' : ''}
+                        </div>
+                        <div class="tax-input-group">
+                            ${taxRate !== database.currentTaxRate ? 
+                                `<button class="btn btn-success" onclick="setActiveTaxRate(${taxRate})" style="padding: 5px 10px; font-size: 0.8rem;">
+                                    <i class="fas fa-check"></i> Set Active
+                                </button>` : ''
+                            }
+                            <button class="btn btn-danger" onclick="removeTaxRate(${index})" style="padding: 5px 10px; font-size: 0.8rem;">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    `;
+                    taxList.appendChild(item);
+                });
+            }
+
+            // Set active tax rate
+            function setActiveTaxRate(taxRate) {
+                database.currentTaxRate = taxRate;
+                updateTaxSettingsList();
+                updateInvoice();
+                document.getElementById('taxLabel').textContent = `Tax (${taxRate}%)`;
+                showNotification(`Tax rate set to ${taxRate}%`);
+            }
+
+            // Add custom payment method
+            function addCustomPayment() {
+                const newMethod = document.getElementById('newPaymentMethod').value.trim().toLowerCase();
+                
+                if (!newMethod) {
+                    showNotification('Please enter a payment method name', 'error');
+                    return;
+                }
+                
+                if (database.customPaymentMethods.includes(newMethod)) {
+                    showNotification('Payment method already exists', 'error');
+                    return;
+                }
+                
+                database.customPaymentMethods.push(newMethod);
+                updatePaymentMethodsUI();
+                updateCustomPaymentList();
+                document.getElementById('newPaymentMethod').value = '';
+                showNotification('Payment method added successfully');
+            }
+
+            // Remove payment method
+            function removePaymentMethod(index) {
+                if (database.customPaymentMethods.length <= 1) {
+                    showNotification('At least one payment method is required', 'error');
+                    return;
+                }
+                
+                const removedMethod = database.customPaymentMethods.splice(index, 1)[0];
+                if (currentPaymentMethod === removedMethod) {
+                    currentPaymentMethod = database.customPaymentMethods[0];
+                }
+                updatePaymentMethodsUI();
+                updateCustomPaymentList();
+                showNotification('Payment method removed');
+            }
+
+            // Add tax rate
+            function addTaxRate() {
+                const newTaxRate = parseFloat(document.getElementById('newTaxRate').value);
+                
+                if (isNaN(newTaxRate) || newTaxRate < 0 || newTaxRate > 100) {
+                    showNotification('Please enter a valid tax rate (0-100%)', 'error');
+                    return;
+                }
+                
+                if (database.taxRates.includes(newTaxRate)) {
+                    showNotification('Tax rate already exists', 'error');
+                    return;
+                }
+                
+                database.taxRates.push(newTaxRate);
+                database.taxRates.sort((a, b) => a - b);
+                updateTaxSettingsList();
+                document.getElementById('newTaxRate').value = '';
+                showNotification('Tax rate added successfully');
+            }
+
+            // Remove tax rate
+            function removeTaxRate(index) {
+                if (database.taxRates.length <= 1) {
+                    showNotification('At least one tax rate is required', 'error');
+                    return;
+                }
+                
+                const removedTaxRate = database.taxRates.splice(index, 1)[0];
+                if (database.currentTaxRate === removedTaxRate) {
+                    database.currentTaxRate = database.taxRates[0];
+                    updateInvoice();
+                    document.getElementById('taxLabel').textContent = `Tax (${database.currentTaxRate}%)`;
+                }
+                updateTaxSettingsList();
+                showNotification('Tax rate removed');
+            }
+
+            // Get payment icon based on method
+            function getPaymentIcon(method) {
+                const icons = {
+                    'cash': 'money-bill',
+                    'card': 'credit-card',
+                    'bank transfer': 'university',
+                    'easypaisa': 'mobile-alt',
+                    'jazzcash': 'mobile-alt',
+                    'upaisa': 'mobile-alt',
+                    'credit': 'credit-card',
+                    'debit': 'credit-card'
+                };
+                return icons[method] || 'money-bill-wave';
+            }
+
+            // Update payment methods UI
+            function updatePaymentMethodsUI() {
+                const paymentMethodsDiv = document.getElementById('paymentMethodsContainer');
+                paymentMethodsDiv.innerHTML = '';
+                
+                database.customPaymentMethods.forEach(method => {
+                    const btn = document.createElement('div');
+                    btn.className = 'payment-btn';
+                    if (method === currentPaymentMethod) {
+                        btn.classList.add('active');
+                    }
+                    btn.dataset.method = method;
+                    btn.innerHTML = `
+                        <i class="fas fa-${getPaymentIcon(method)}"></i>
+                        ${method.charAt(0).toUpperCase() + method.slice(1)}
+                    `;
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        currentPaymentMethod = method;
+                    });
+                    paymentMethodsDiv.appendChild(btn);
+                });
+            }
+
+            // Render items to billing screen
+            function renderItems() {
+                const itemsGrid = document.getElementById('itemsGrid');
+                
+                if (database.items.length === 0) {
+                    itemsGrid.innerHTML = '<div class="empty-state"><i class="fas fa-utensils"></i><p>No items added yet. Add items in Admin panel.</p></div>';
+                    return;
+                }
+                
+                itemsGrid.innerHTML = '';
+                
+                database.items.forEach(item => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'item-card';
+                    
+                    if (item.stock <= 0) {
+                        itemCard.classList.add('disabled');
+                    } else {
+                        itemCard.onclick = () => addToOrder(item.id);
+                    }
+                    
+                    itemCard.innerHTML = `
+                        <button class="item-remove-btn" onclick="removeItemFromMenu(${item.id}, event)">×</button>
+                        <h4>${item.name}</h4>
+                        <div class="item-price">${formatCurrency(item.price)}</div>
+                        <div class="item-category">${item.category}</div>
+                        <div style="font-size: 0.8rem; color: ${item.stock <= 10 ? '#e74c3c' : '#7f8c8d'}; margin-top: 5px;">
+                            Stock: <span id="stock-${item.id}">${item.stock}</span> ${item.stock <= 10 ? '(Low)' : ''}
+                        </div>
+                        ${item.stock <= 0 ? '<div class="out-of-stock">OUT OF STOCK</div>' : ''}
+                    `;
+                    
+                    itemsGrid.appendChild(itemCard);
+                });
+            }
+
+            // Update stock display for specific item
+            function updateItemStockDisplay(itemId) {
+                const item = database.items.find(i => i.id === itemId);
+                if (!item) return;
+                
+                const stockElement = document.getElementById(`stock-${item.id}`);
+                if (stockElement) {
+                    stockElement.textContent = item.stock;
+                    
+                    // Update color based on stock level
+                    const parentDiv = stockElement.closest('div');
+                    if (parentDiv) {
+                        parentDiv.style.color = item.stock <= 0 ? '#e74c3c' : item.stock <= 10 ? '#e74c3c' : '#7f8c8d';
+                    }
+                    
+                    // Update out of stock overlay
+                    const itemCard = stockElement.closest('.item-card');
+                    if (itemCard) {
+                        const outOfStockDiv = itemCard.querySelector('.out-of-stock');
+                        if (item.stock <= 0) {
+                            if (!outOfStockDiv) {
+                                const outOfStock = document.createElement('div');
+                                outOfStock.className = 'out-of-stock';
+                                outOfStock.textContent = 'OUT OF STOCK';
+                                itemCard.appendChild(outOfStock);
+                            }
+                            itemCard.classList.add('disabled');
+                        } else {
+                            if (outOfStockDiv) {
+                                outOfStockDiv.remove();
+                            }
+                            itemCard.classList.remove('disabled');
+                        }
+                    }
+                }
+            }
+
+            // Remove item from menu
+            function removeItemFromMenu(itemId, event) {
+                if (event && event.stopPropagation) event.stopPropagation();
+                itemToDelete = itemId;
+                const item = database.items.find(i => i.id === itemId);
+                
+                if (item) {
+                    document.getElementById('deleteMessage').textContent = `Are you sure you want to delete "${item.name}" from the menu?`;
+                    document.getElementById('confirmDeleteModal').style.display = 'flex';
+                }
+            }
+
+            // Confirm delete
+            function confirmDelete() {
+                if (itemToDelete) {
+                    database.items = database.items.filter(i => i.id !== itemToDelete);
+                    renderItems();
+                    updateAdminDashboard();
+                    updateAnalytics();
+                    showNotification('Item deleted from menu');
+                    closeModal('confirmDeleteModal');
+                    itemToDelete = null;
+                }
+            }
+
+            // Search items
+            function searchItems() {
+                if (database.items.length === 0) return;
+                
+                const searchTerm = document.getElementById('itemSearch').value.toLowerCase();
+                const items = document.querySelectorAll('.item-card');
+                
+                items.forEach(item => {
+                    const itemName = item.querySelector('h4').textContent.toLowerCase();
+                    item.style.display = itemName.includes(searchTerm) ? 'block' : 'none';
+                });
+            }
+
+            function clearSearch() {
+                document.getElementById('itemSearch').value = '';
+                searchItems();
+            }
+
+            // Add item to order
+            function addToOrder(itemId, quantity = 1) {
+                const item = database.items.find(i => i.id === itemId);
+                if (!item) return;
+                
+                if (item.stock <= 0) {
+                    showNotification(`${item.name} is out of stock!`, 'error');
+                    return;
+                }
+                
+                const existingItem = currentOrder.find(i => i.id === itemId);
+                const currentQty = existingItem ? existingItem.quantity : 0;
+                
+                if (currentQty + quantity > item.stock) {
+                    showNotification(`Only ${item.stock} ${item.name}(s) available in stock!`, 'error');
+                    return;
+                }
+                
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    currentOrder.push({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: quantity,
+                        category: item.category
+                    });
+                }
+                
+                updateOrderDisplay();
+                updateInvoice();
+                showNotification(`${quantity} × ${item.name} added to order`);
+            }
+
+            // Remove item from order
+            function removeFromOrder(itemId, event) {
+                if (event && event.stopPropagation) event.stopPropagation();
+                currentOrder = currentOrder.filter(i => i.id !== itemId);
+                updateOrderDisplay();
+                updateInvoice();
+                showNotification('Item removed from order');
+            }
+
+            // Update order display
+            function updateOrderDisplay() {
+                const orderContainer = document.getElementById('currentOrder');
+                
+                if (currentOrder.length === 0) {
+                    orderContainer.innerHTML = '<p style="color: #7f8c8d; text-align: center; padding: 20px;">No items added yet</p>';
+                    return;
+                }
+                
+                let orderHTML = '';
+                currentOrder.forEach(item => {
+                    const dbItem = database.items.find(i => i.id === item.id);
+                    const maxAvailable = dbItem ? dbItem.stock : 0;
+                    
+                    orderHTML += `
+                        <div class="order-item">
+                            <button class="order-remove-btn" onclick="removeFromOrder(${item.id}, event)">×</button>
+                            <div>
+                                <strong>${item.name}</strong>
+                                <div style="font-size: 0.9rem; color: #7f8c8d;">${formatCurrency(item.price)} each</div>
+                                ${item.quantity >= maxAvailable ? '<div style="font-size: 0.8rem; color: #e74c3c;">Max available in stock</div>' : ''}
+                            </div>
+                            <div class="order-item-controls">
+                                <button class="quantity-btn decrease" onclick="changeQuantity(${item.id}, -1)">-</button>
+                                <span style="min-width: 30px; text-align: center;">${item.quantity}</span>
+                                <button class="quantity-btn increase" onclick="changeQuantity(${item.id}, 1)" ${item.quantity >= maxAvailable ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>+</button>
+                                <span style="min-width: 80px; text-align: right;">${formatCurrency(item.price * item.quantity)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                orderContainer.innerHTML = orderHTML;
+            }
+
+            // Change item quantity
+            function changeQuantity(itemId, change) {
+                const item = currentOrder.find(i => i.id === itemId);
+                if (!item) return;
+                
+                const dbItem = database.items.find(i => i.id === itemId);
+                if (!dbItem) return;
+                
+                if (change > 0 && item.quantity >= dbItem.stock) {
+                    showNotification(`Only ${dbItem.stock} ${dbItem.name}(s) available in stock!`, 'error');
+                    return;
+                }
+                
+                item.quantity += change;
+                
+                if (item.quantity <= 0) {
+                    currentOrder = currentOrder.filter(i => i.id !== itemId);
+                }
+                
+                updateOrderDisplay();
+                updateInvoice();
+            }
+
+            // Update invoice with dynamic tax
+            function updateInvoice() {
+                const invoiceItems = document.getElementById('invoiceItems');
+                let subtotal = 0;
+                
+                if (currentOrder.length === 0) {
+                    invoiceItems.innerHTML = '<div style="text-align: center; color: #7f8c8d; padding: 10px;">Order items will appear here</div>';
+                    document.getElementById('subtotal').textContent = formatCurrency(0);
+                    document.getElementById('tax').textContent = formatCurrency(0);
+                    document.getElementById('total').textContent = formatCurrency(0);
+                    return;
+                }
+                
+                let invoiceHTML = '';
+                currentOrder.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+                    
+                    invoiceHTML += `
+                        <div class="invoice-row">
+                            <span>${item.name} × ${item.quantity}</span>
+                            <span>${formatCurrency(itemTotal)}</span>
+                        </div>
+                    `;
+                });
+                
+                invoiceItems.innerHTML = invoiceHTML;
+                
+                const taxRate = database.currentTaxRate;
+                const tax = subtotal * (taxRate / 100);
+                const total = subtotal + tax;
+                
+                document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+                document.getElementById('taxLabel').textContent = `Tax (${taxRate}%)`;
+                document.getElementById('tax').textContent = formatCurrency(tax);
+                document.getElementById('total').textContent = formatCurrency(total);
+            }
+
+            // Generate bill and update stock
+            document.getElementById('generateBill').addEventListener('click', () => {
+                if (currentOrder.length === 0) {
+                    showNotification('Add items to order first', 'error');
+                    return;
+                }
+                
+                for (const orderItem of currentOrder) {
+                    const dbItem = database.items.find(i => i.id === orderItem.id);
+                    if (!dbItem) {
+                        showNotification(`${orderItem.name} no longer exists in menu!`, 'error');
+                        return;
+                    }
+                    
+                    if (orderItem.quantity > dbItem.stock) {
+                        showNotification(`Only ${dbItem.stock} ${dbItem.name}(s) available in stock!`, 'error');
+                        return;
+                    }
+                }
+                
+                let subtotal = 0;
+                currentOrder.forEach(item => {
+                    subtotal += item.price * item.quantity;
+                });
+                
+                const taxRate = database.currentTaxRate;
+                const tax = subtotal * (taxRate / 100);
+                const total = subtotal + tax;
+                
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const billNumber = database.currentBillNumber;
+                const seriesNo = `B${year}${month}${billNumber.toString().padStart(4, '0')}`;
+                
+                const bill = {
+                    id: billNumber,
+                    seriesNo: seriesNo,
+                    date: now.toLocaleString('en-PK'),
+                    items: JSON.parse(JSON.stringify(currentOrder)),
+                    subtotal: subtotal,
+                    tax: tax,
+                    total: total,
+                    paymentMethod: currentPaymentMethod,
+                    taxRate: taxRate
+                };
+                
+                // Store bill
+                database.bills.unshift(bill);
+                database.currentBillNumber++;
+                database.todayBills++;
+                database.todaySales += total;
+                
+                // Update stock for each item and track sales
+                currentOrder.forEach(orderItem => {
+                    const dbItem = database.items.find(i => i.id === orderItem.id);
+                    if (dbItem) {
+                        dbItem.soldToday += orderItem.quantity;
+                        dbItem.soldTotal += orderItem.quantity;
+                        dbItem.stock -= orderItem.quantity;
+                        
+                        // Update stock display immediately
+                        updateItemStockDisplay(dbItem.id);
+                        
+                        const today = new Date().getDay();
+                        const dayIndex = today === 0 ? 6 : today - 1;
+                        database.weeklySales[dayIndex] += orderItem.quantity * dbItem.price;
+                        
+                        if (!database.categorySales[dbItem.category]) {
+                            database.categorySales[dbItem.category] = 0;
+                        }
+                        database.categorySales[dbItem.category] += orderItem.quantity * dbItem.price;
+                        
+                        if (!database.productSales[dbItem.name]) {
+                            database.productSales[dbItem.name] = {
+                                quantity: 0,
+                                revenue: 0
+                            };
+                        }
+                        database.productSales[dbItem.name].quantity += orderItem.quantity;
+                        database.productSales[dbItem.name].revenue += orderItem.quantity * dbItem.price;
+                    }
+                });
+                
+                currentOrder = [];
+                
+                updateOrderDisplay();
+                updateInvoice();
+                updateAdminDashboard();
+                updateAnalytics();
+                renderCharts();
+                
+                document.getElementById('billNumber').textContent = `Bill #${database.currentBillNumber}`;
+                
+                showNotification(`Bill ${seriesNo} generated successfully!`, 'success');
+            });
+
+            // Print current receipt
+            function printCurrentReceipt() {
+                if (currentOrder.length === 0) {
+                    showNotification('No items in current order to print', 'error');
+                    return;
+                }
+                
+                let subtotal = 0;
+                currentOrder.forEach(item => {
+                    subtotal += item.price * item.quantity;
+                });
+                
+                const taxRate = database.currentTaxRate;
+                const tax = subtotal * (taxRate / 100);
+                const total = subtotal + tax;
+                
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const billNumber = database.currentBillNumber;
+                const seriesNo = `B${year}${month}${billNumber.toString().padStart(4, '0')}`;
+                
+                let receiptHTML = `
+                <div class="receipt-print receipt-box">
+                    <h2>${database.restaurantName}</h2>
+                    <div class="receipt-text-center">Receipt</div>
+                    <div class="receipt-text-center">${seriesNo}</div>
+                    <div class="receipt-text-center receipt-small">${now.toLocaleString('en-PK')}</div>
+                    <div class="receipt-divider"></div>
+                    ${currentOrder.map(item => `
+                        <div class="receipt-line">
+                            <span>${item.name} x${item.quantity}</span>
+                            <span>${formatCurrencyForPrint(item.price * item.quantity)}</span>
+                        </div>
+                    `).join("")}
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-line">
+                        <span>Subtotal</span>
+                        <span>${formatCurrencyForPrint(subtotal)}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Tax (${taxRate}%)</span>
+                        <span>${formatCurrencyForPrint(tax)}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-line receipt-bold">
+                        <span>Total</span>
+                        <span>${formatCurrencyForPrint(total)}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Payment</span>
+                        <span>${currentPaymentMethod}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-text-center receipt-bold">Thank You!</div>
+                    <div class="receipt-text-center receipt-small">Visit Again</div>
+                </div>
+                `;
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Print Receipt</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            @media print {
+                                body * {
+                                    visibility: hidden;
+                                }
+                                .receipt-print, .receipt-print * {
+                                    visibility: visible;
+                                }
+                                .receipt-print {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    width: 80mm !important;
+                                    font-family: monospace !important;
+                                    font-size: 11px !important;
+                                    background: white !important;
+                                    color: black !important;
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    padding: 5px !important;
+                                    margin: 0 !important;
+                                    line-height: 1.2 !important;
+                                }
+                                .receipt-print h2 {
+                                    text-align: center;
+                                    margin: 4px 0;
+                                    font-size: 14px !important;
+                                    font-weight: bold;
+                                }
+                                .receipt-line {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin: 2px 0 !important;
+                                }
+                                .receipt-divider {
+                                    border-top: 1px dashed #000;
+                                    margin: 4px 0 !important;
+                                }
+                                .receipt-text-center {
+                                    text-align: center !important;
+                                }
+                                .receipt-text-right {
+                                    text-align: right !important;
+                                }
+                                .receipt-bold {
+                                    font-weight: bold !important;
+                                }
+                                .receipt-small {
+                                    font-size: 9px !important;
+                                }
+                            }
+                            .receipt-box {
+                                width: 80mm;
+                                background: #fff;
+                                padding: 5px;
+                                font-family: monospace;
+                                font-size: 11px;
+                                border: 1px solid #ccc;
+                                line-height: 1.2;
+                            }
+                            .receipt-box h2 {
+                                text-align: center;
+                                margin: 4px 0;
+                                font-size: 14px;
+                                font-weight: bold;
+                            }
+                            .receipt-line {
+                                display: flex;
+                                justify-content: space-between;
+                                margin: 2px 0;
+                            }
+                            .receipt-divider {
+                                border-top: 1px dashed #000;
+                                margin: 4px 0;
+                            }
+                            .receipt-text-center {
+                                text-align: center;
+                            }
+                            .receipt-text-right {
+                                text-align: right;
+                            }
+                            .receipt-bold {
+                                font-weight: bold;
+                            }
+                            .receipt-small {
+                                font-size: 9px;
+                            }
+                        </style>
+                    </head>
+                    <body onload="window.print(); setTimeout(function() { window.close(); }, 100);">
+                        ${receiptHTML}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+
+            // Print specific bill receipt
+            function printBillReceipt(billId) {
+                const bill = database.bills.find(b => b.id === billId);
+                if (!bill) {
+                    showNotification('Bill not found', 'error');
+                    return;
+                }
+                
+                let receiptHTML = `
+                <div class="receipt-print receipt-box">
+                    <h2>${database.restaurantName}</h2>
+                    <div class="receipt-text-center">Receipt</div>
+                    <div class="receipt-text-center">${bill.seriesNo}</div>
+                    <div class="receipt-text-center receipt-small">${bill.date}</div>
+                    <div class="receipt-divider"></div>
+                    ${bill.items.map(item => `
+                        <div class="receipt-line">
+                            <span>${item.name} x${item.quantity}</span>
+                            <span>${formatCurrencyForPrint(item.price * item.quantity)}</span>
+                        </div>
+                    `).join("")}
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-line">
+                        <span>Subtotal</span>
+                        <span>${formatCurrencyForPrint(bill.subtotal)}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Tax (${bill.taxRate}%)</span>
+                        <span>${formatCurrencyForPrint(bill.tax)}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-line receipt-bold">
+                        <span>Total</span>
+                        <span>${formatCurrencyForPrint(bill.total)}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Payment</span>
+                        <span>${bill.paymentMethod}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-text-center receipt-bold">Thank You!</div>
+                    <div class="receipt-text-center receipt-small">Visit Again</div>
+                </div>
+                `;
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Print Receipt</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            @media print {
+                                body * {
+                                    visibility: hidden;
+                                }
+                                .receipt-print, .receipt-print * {
+                                    visibility: visible;
+                                }
+                                .receipt-print {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    width: 80mm !important;
+                                    font-family: monospace !important;
+                                    font-size: 11px !important;
+                                    background: white !important;
+                                    color: black !important;
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    padding: 5px !important;
+                                    margin: 0 !important;
+                                    line-height: 1.2 !important;
+                                }
+                                .receipt-print h2 {
+                                    text-align: center;
+                                    margin: 4px 0;
+                                    font-size: 14px !important;
+                                    font-weight: bold;
+                                }
+                                .receipt-line {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin: 2px 0 !important;
+                                }
+                                .receipt-divider {
+                                    border-top: 1px dashed #000;
+                                    margin: 4px 0 !important;
+                                }
+                                .receipt-text-center {
+                                    text-align: center !important;
+                                }
+                                .receipt-text-right {
+                                    text-align: right !important;
+                                }
+                                .receipt-bold {
+                                    font-weight: bold !important;
+                                }
+                                .receipt-small {
+                                    font-size: 9px !important;
+                                }
+                            }
+                            .receipt-box {
+                                width: 80mm;
+                                background: #fff;
+                                padding: 5px;
+                                font-family: monospace;
+                                font-size: 11px;
+                                border: 1px solid #ccc;
+                                line-height: 1.2;
+                            }
+                            .receipt-box h2 {
+                                text-align: center;
+                                margin: 4px 0;
+                                font-size: 14px;
+                                font-weight: bold;
+                            }
+                            .receipt-line {
+                                display: flex;
+                                justify-content: space-between;
+                                margin: 2px 0;
+                            }
+                            .receipt-divider {
+                                border-top: 1px dashed #000;
+                                margin: 4px 0;
+                            }
+                            .receipt-text-center {
+                                text-align: center;
+                            }
+                            .receipt-text-right {
+                                text-align: right;
+                            }
+                            .receipt-bold {
+                                font-weight: bold;
+                            }
+                            .receipt-small {
+                                font-size: 9px;
+                            }
+                        </style>
+                    </head>
+                    <body onload="window.print(); setTimeout(function() { window.close(); }, 100);">
+                        ${receiptHTML}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+
+            // Print sales report
+            function printSalesReport() {
+                const now = new Date();
+                let reportHTML = `
+                <div class="receipt-print receipt-box">
+                    <h2>${database.restaurantName}</h2>
+                    <div class="receipt-text-center receipt-bold">SALES REPORT</div>
+                    <div class="receipt-text-center receipt-small">${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-line">
+                        <span>Today's Sales:</span>
+                        <span class="receipt-bold">${formatCurrencyForPrint(database.todaySales)}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Today's Bills:</span>
+                        <span>${database.todayBills}</span>
+                    </div>
+                    <div class="receipt-line">
+                        <span>Daily Target:</span>
+                        <span>${formatCurrencyForPrint(database.dailyTarget)}</span>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-text-center receipt-bold">Payment Methods</div>
+                    ${Object.entries(getPaymentStats()).map(([method, data]) => `
+                        <div class="receipt-line">
+                            <span>${method}:</span>
+                            <span>${data.count} bills (${formatCurrencyForPrint(data.amount)})</span>
+                        </div>
+                    `).join("")}
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-text-center receipt-bold">Top Products</div>
+                    ${getTopProducts(5).map((product, index) => `
+                        <div class="receipt-line">
+                            <span>${index + 1}. ${product.name}</span>
+                            <span>${product.quantity} sold</span>
+                        </div>
+                    `).join("")}
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-text-center receipt-small">End of Report</div>
+                    <div class="receipt-text-center receipt-small">Generated by POS System</div>
+                </div>
+                `;
+
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Print Sales Report</title>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            @media print {
+                                body * {
+                                    visibility: hidden;
+                                }
+                                .receipt-print, .receipt-print * {
+                                    visibility: visible;
+                                }
+                                .receipt-print {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    width: 80mm !important;
+                                    font-family: monospace !important;
+                                    font-size: 11px !important;
+                                    background: white !important;
+                                    color: black !important;
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    padding: 5px !important;
+                                    margin: 0 !important;
+                                    line-height: 1.2 !important;
+                                }
+                                .receipt-print h2 {
+                                    text-align: center;
+                                    margin: 4px 0;
+                                    font-size: 14px !important;
+                                    font-weight: bold;
+                                }
+                                .receipt-line {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    margin: 2px 0 !important;
+                                }
+                                .receipt-divider {
+                                    border-top: 1px dashed #000;
+                                    margin: 4px 0 !important;
+                                }
+                                .receipt-text-center {
+                                    text-align: center !important;
+                                }
+                                .receipt-text-right {
+                                    text-align: right !important;
+                                }
+                                .receipt-bold {
+                                    font-weight: bold !important;
+                                }
+                                .receipt-small {
+                                    font-size: 9px !important;
+                                }
+                            }
+                            .receipt-box {
+                                width: 80mm;
+                                background: #fff;
+                                padding: 5px;
+                                font-family: monospace;
+                                font-size: 11px;
+                                border: 1px solid #ccc;
+                                line-height: 1.2;
+                            }
+                            .receipt-box h2 {
+                                text-align: center;
+                                margin: 4px 0;
+                                font-size: 14px;
+                                font-weight: bold;
+                            }
+                            .receipt-line {
+                                display: flex;
+                                justify-content: space-between;
+                                margin: 2px 0;
+                            }
+                            .receipt-divider {
+                                border-top: 1px dashed #000;
+                                margin: 4px 0;
+                            }
+                            .receipt-text-center {
+                                text-align: center;
+                            }
+                            .receipt-text-right {
+                                text-align: right;
+                            }
+                            .receipt-bold {
+                                font-weight: bold;
+                            }
+                            .receipt-small {
+                                font-size: 9px;
+                            }
+                        </style>
+                    </head>
+                    <body onload="window.print(); setTimeout(function() { window.close(); }, 100);">
+                        ${reportHTML}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            }
+
+            // Clear order
+            document.getElementById('clearOrder').addEventListener('click', () => {
+                if (currentOrder.length === 0) return;
+                
+                if (confirm('Clear current order?')) {
+                    currentOrder = [];
+                    updateOrderDisplay();
+                    updateInvoice();
+                    showNotification('Order cleared');
+                }
+            });
+
+            // Item form submission
+            document.getElementById('itemForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('itemName').value.trim();
+                const price = parseFloat(document.getElementById('itemPrice').value);
+                const category = document.getElementById('itemCategory').value;
+                const stock = parseInt(document.getElementById('itemStock').value) || 0;
+                const editingId = document.getElementById('editingItemId').value;
+                
+                if (!name || isNaN(price) || price <= 0) {
+                    showNotification('Please enter valid item details', 'error');
+                    return;
+                }
+                
+                if (editingId) {
+                    const itemIndex = database.items.findIndex(item => item.id == editingId);
+                    if (itemIndex !== -1) {
+                        database.items[itemIndex].name = name;
+                        database.items[itemIndex].price = price;
+                        database.items[itemIndex].category = category;
+                        database.items[itemIndex].stock = stock;
+                        
+                        showNotification(`${name} updated successfully`);
+                        
+                        document.getElementById('itemForm').reset();
+                        document.getElementById('editingItemId').value = '';
+                        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Add Item';
+                        document.getElementById('cancelBtn').style.display = 'none';
+                    }
+                } else {
+                    const newId = database.items.length > 0 ? 
+                        Math.max(...database.items.map(i => i.id)) + 1 : 1;
+                    
+                    database.items.push({
+                        id: newId,
+                        name: name,
+                        price: price,
+                        category: category,
+                        stock: stock,
+                        soldToday: 0,
+                        soldTotal: 0
+                    });
+                    
+                    showNotification(`${name} added to menu`);
+                    
+                    document.getElementById('itemForm').reset();
+                }
+                
+                renderItems();
+                updateAdminDashboard();
+                updateAnalytics();
+                renderCharts();
+            });
+
+            // Cancel edit
+            function cancelEdit() {
+                document.getElementById('itemForm').reset();
+                document.getElementById('editingItemId').value = '';
+                document.getElementById('submitBtn').innerHTML = '<i class="fas fa-save"></i> Add Item';
+                document.getElementById('cancelBtn').style.display = 'none';
+                showNotification('Edit cancelled');
+            }
+
+            // Edit item
+            function editItem(itemId) {
+                const item = database.items.find(i => i.id === itemId);
+                if (!item) return;
+                
+                document.getElementById('editItemId').value = item.id;
+                document.getElementById('modalItemName').value = item.name;
+                document.getElementById('modalItemPrice').value = item.price;
+                document.getElementById('modalItemCategory').value = item.category;
+                document.getElementById('modalItemStock').value = item.stock;
+                
+                document.getElementById('editItemModal').style.display = 'flex';
+            }
+
+            // Edit item form submission
+            document.getElementById('editItemForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const itemId = parseInt(document.getElementById('editItemId').value);
+                const name = document.getElementById('modalItemName').value.trim();
+                const price = parseFloat(document.getElementById('modalItemPrice').value);
+                const category = document.getElementById('modalItemCategory').value;
+                const stock = parseInt(document.getElementById('modalItemStock').value) || 0;
+                
+                const itemIndex = database.items.findIndex(item => item.id === itemId);
+                if (itemIndex !== -1) {
+                    database.items[itemIndex].name = name;
+                    database.items[itemIndex].price = price;
+                    database.items[itemIndex].category = category;
+                    database.items[itemIndex].stock = stock;
+                    
+                    showNotification(`${name} updated successfully`);
+                    
+                    renderItems();
+                    updateAdminDashboard();
+                    updateAnalytics();
+                    renderCharts();
+                    
+                    closeModal('editItemModal');
+                }
+            });
+
+            // Update admin dashboard
+            function updateAdminDashboard() {
+                document.getElementById('todaySales').textContent = formatCurrency(database.todaySales);
+                document.getElementById('todayBills').textContent = database.todayBills;
+                document.getElementById('dailyTargetDisplay').textContent = formatCurrency(database.dailyTarget);
+                
+                let mostSold = { name: '-', sold: 0 };
+                database.items.forEach(item => {
+                    if (item.soldToday > mostSold.sold) {
+                        mostSold = { name: item.name, sold: item.soldToday };
+                    }
+                });
+                
+                document.getElementById('mostSoldItem').textContent = 
+                    mostSold.sold > 0 ? `${mostSold.name} (${mostSold.sold})` : '-';
+                
+                const progress = Math.min((database.todaySales / database.dailyTarget) * 100, 100);
+                document.getElementById('dailyProgress').style.width = `${progress}%`;
+                document.getElementById('targetProgress').textContent = `${progress.toFixed(1)}%`;
+                
+                updateAllItemsTable();
+                updateInventoryList();
+            }
+
+            // Update all items table with PROPER ALIGNMENT
+            function updateAllItemsTable() {
+                const itemsTable = document.getElementById('allItemsTable');
+                
+                if (database.items.length === 0) {
+                    itemsTable.innerHTML = '<div class="empty-state"><i class="fas fa-utensils"></i><p>No menu items added yet. Add items above.</p></div>';
+                    return;
+                }
+                
+                let html = '<table class="admin-table"><thead><tr><th>ID</th><th>Item Name</th><th>Price (PKR)</th><th>Category</th><th>Stock</th><th>Sold Today</th><th>Sold Total</th><th>Actions</th></tr></thead><tbody>';
+                
+                database.items.forEach(item => {
+                    html += `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td>${formatCurrency(item.price)}</td>
+                            <td><span class="category-badge">${item.category}</span></td>
+                            <td><span style="font-weight: bold; color: ${item.stock <= 0 ? '#e74c3c' : item.stock <= 10 ? '#f39c12' : '#27ae60'}">${item.stock}</span></td>
+                            <td>${item.soldToday}</td>
+                            <td>${item.soldTotal}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn" style="background: #3498db; color: white;" onclick="editItem(${item.id})">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="action-btn" style="background: #e74c3c; color: white;" onclick="removeItemFromMenu(${item.id})">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                itemsTable.innerHTML = html;
+            }
+
+            // Update inventory list
+            function updateInventoryList() {
+                const inventoryList = document.getElementById('inventoryList');
+                
+                if (database.items.length === 0) {
+                    inventoryList.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-box"></i><p>No inventory items yet. Add items first.</p></div>';
+                    return;
+                }
+                
+                let html = '<div style="margin-bottom: 20px;"><button class="btn btn-success" onclick="openAddInventoryModal()"><i class="fas fa-plus"></i> Add Inventory</button></div>';
+                html += '<table class="admin-table"><thead><tr><th>Item</th><th>Stock</th><th>Status</th><th>Sold Today</th><th>Actions</th></tr></thead><tbody>';
+                
+                database.items.forEach(item => {
+                    let status = '';
+                    let statusClass = '';
+                    
+                    if (item.stock <= 0) {
+                        status = 'Out of Stock';
+                        statusClass = 'status-outstock';
+                    } else if (item.stock <= 10) {
+                        status = 'Low Stock';
+                        statusClass = 'status-lowstock';
+                    } else {
+                        status = 'In Stock';
+                        statusClass = 'status-instock';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td style="font-weight: bold; color: #2c3e50;">${item.stock}</td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td>${item.soldToday}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn" style="background: #f39c12; color: white;" onclick="addInventoryForItem(${item.id})">
+                                        <i class="fas fa-plus"></i> Add Stock
+                                    </button>
+                                    <button class="action-btn" style="background: #3498db; color: white;" onclick="editItem(${item.id})">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                inventoryList.innerHTML = html;
+            }
+
+            // Open add inventory modal
+            function openAddInventoryModal() {
+                const select = document.getElementById('inventoryItemSelect');
+                select.innerHTML = '<option value="">Select an item</option>';
+                
+                database.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.name} (Current: ${item.stock})`;
+                    select.appendChild(option);
+                });
+                
+                document.getElementById('addInventoryModal').style.display = 'flex';
+            }
+
+            // Add inventory for specific item
+            function addInventoryForItem(itemId) {
+                const item = database.items.find(i => i.id === itemId);
+                if (!item) return;
+                
+                const select = document.getElementById('inventoryItemSelect');
+                select.innerHTML = '<option value="">Select an item</option>';
+                
+                database.items.forEach(i => {
+                    const option = document.createElement('option');
+                    option.value = i.id;
+                    option.textContent = `${i.name} (Current: ${i.stock})`;
+                    if (i.id === itemId) option.selected = true;
+                    select.appendChild(option);
+                });
+                
+                document.getElementById('addInventoryModal').style.display = 'flex';
+            }
+
+            // Add inventory form submission
+            document.getElementById('addInventoryForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const itemId = parseInt(document.getElementById('inventoryItemSelect').value);
+                const quantity = parseInt(document.getElementById('inventoryQuantity').value);
+                
+                if (!itemId || isNaN(quantity) || quantity <= 0) {
+                    showNotification('Please select an item and enter valid quantity', 'error');
+                    return;
+                }
+                
+                const item = database.items.find(i => i.id === itemId);
+                if (item) {
+                    item.stock += quantity;
+                    updateItemStockDisplay(itemId);
+                    showNotification(`Added ${quantity} units to ${item.name}. New stock: ${item.stock}`);
+                    
+                    renderItems();
+                    updateAdminDashboard();
+                    updateAnalytics();
+                    renderCharts();
+                    
+                    closeModal('addInventoryModal');
+                    document.getElementById('addInventoryForm').reset();
+                }
+            });
+
+            // Update analytics
+            function updateAnalytics() {
+                updateTopProductsTable();
+                updateRecentBills();
+            }
+
+            // Render charts
+            function renderCharts() {
+                renderCategoryChart();
+                renderWeeklySalesChart();
+                renderPaymentChart();
+            }
+
+            // Render category chart
+            function renderCategoryChart() {
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+                
+                const categories = Object.keys(database.categorySales);
+                const sales = Object.values(database.categorySales);
+                
+                if (categories.length === 0) {
+                    return;
+                }
+                
+                const colors = [
+                    '#006600', '#27ae60', '#2ecc71', '#3498db', 
+                    '#9b59b6', '#e74c3c', '#f39c12', '#1abc9c'
+                ];
+                
+                categoryChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            data: sales,
+                            backgroundColor: colors.slice(0, categories.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = sales.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Render weekly sales chart
+            function renderWeeklySalesChart() {
+                const ctx = document.getElementById('weeklySalesChart').getContext('2d');
+                
+                if (weeklySalesChart) {
+                    weeklySalesChart.destroy();
+                }
+                
+                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const sales = database.weeklySales;
+                
+                weeklySalesChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Sales',
+                            data: sales,
+                            backgroundColor: '#006600',
+                            borderColor: '#004d00',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatCurrency(value);
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return formatCurrency(context.raw);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Render payment chart
+            function renderPaymentChart() {
+                const ctx = document.getElementById('paymentChart').getContext('2d');
+                
+                if (paymentChart) {
+                    paymentChart.destroy();
+                }
+                
+                const paymentStats = getPaymentStats();
+                const methods = Object.keys(paymentStats);
+                const counts = methods.map(method => paymentStats[method].count);
+                const amounts = methods.map(method => paymentStats[method].amount);
+                
+                if (methods.length === 0) {
+                    return;
+                }
+                
+                paymentChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: methods.map(m => m.charAt(0).toUpperCase() + m.slice(1)),
+                        datasets: [{
+                            label: 'Number of Transactions',
+                            data: counts,
+                            backgroundColor: ['#006600', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#e74c3c'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const method = methods[context.dataIndex];
+                                        const count = counts[context.dataIndex];
+                                        const amount = amounts[context.dataIndex];
+                                        return `${context.label}: ${count} transactions (${formatCurrency(amount)})`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Get payment statistics
+            function getPaymentStats() {
+                const paymentStats = {};
+                
+                database.bills.forEach(bill => {
+                    if (!paymentStats[bill.paymentMethod]) {
+                        paymentStats[bill.paymentMethod] = {
+                            count: 0,
+                            amount: 0
+                        };
+                    }
+                    paymentStats[bill.paymentMethod].count += 1;
+                    paymentStats[bill.paymentMethod].amount += bill.total;
+                });
+                
+                return paymentStats;
+            }
+
+            // Get top products
+            function getTopProducts(limit = 10) {
+                if (Object.keys(database.productSales).length === 0) {
+                    return [];
+                }
+                
+                return Object.keys(database.productSales)
+                    .map(name => ({
+                        name,
+                        quantity: database.productSales[name].quantity,
+                        revenue: database.productSales[name].revenue
+                    }))
+                    .sort((a, b) => b.quantity - a.quantity)
+                    .slice(0, limit);
+            }
+
+            // Update top products table
+            function updateTopProductsTable() {
+                const table = document.getElementById('topProductsTable');
+                
+                const topProducts = getTopProducts(10);
+                
+                if (topProducts.length === 0) {
+                    table.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>Product sales data will appear here</p></div>';
+                    return;
+                }
+                
+                let html = '<table class="admin-table"><thead><tr><th>Product</th><th>Quantity Sold</th><th>Revenue</th><th>Avg. Price</th></tr></thead><tbody>';
+                
+                topProducts.forEach(product => {
+                    const avgPrice = product.quantity > 0 ? product.revenue / product.quantity : 0;
+                    
+                    html += `
+                        <tr>
+                            <td>${product.name}</td>
+                            <td>${product.quantity}</td>
+                            <td>${formatCurrency(product.revenue)}</td>
+                            <td>${formatCurrency(avgPrice)}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                table.innerHTML = html;
+            }
+
+            // Update recent bills
+            function updateRecentBills() {
+                const container = document.getElementById('recentBills');
+                
+                if (database.bills.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><p>No transactions yet</p></div>';
+                    return;
+                }
+                
+                let html = '';
+                database.bills.slice(0, 10).forEach(bill => {
+                    let itemsText = '';
+                    bill.items.slice(0, 2).forEach(item => {
+                        itemsText += `${item.name} (${item.quantity}), `;
+                    });
+                    
+                    if (bill.items.length > 2) {
+                        itemsText += `+${bill.items.length - 2} more`;
+                    } else {
+                        itemsText = itemsText.slice(0, -2);
+                    }
+                    
+                    html += `
+                        <div class="bill-item">
+                            <div class="bill-header">
+                                <span class="bill-id">${bill.seriesNo}</span>
+                                <span style="font-size: 0.9rem; color: #7f8c8d;">${bill.date}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555; margin: 5px 0;">${itemsText}</div>
+                            <div class="bill-total">${formatCurrency(bill.total)} (${bill.paymentMethod})</div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="btn" onclick="viewBillDetails(${bill.id})" style="padding: 5px 10px; font-size: 0.8rem; flex: 1;">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="btn btn-warning" onclick="printBillReceipt(${bill.id})" style="padding: 5px 10px; font-size: 0.8rem; flex: 1;">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                                <button class="btn btn-success" onclick="downloadSpecificBillPDF(${bill.id})" style="padding: 5px 10px; font-size: 0.8rem; flex: 1;">
+                                    <i class="fas fa-download"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            }
+
+            // Search bill by number
+            function searchBillByNumber() {
+                const searchTerm = document.getElementById('billSearchInput').value.trim();
+                const resultsDiv = document.getElementById('searchResults');
+                
+                if (!searchTerm) {
+                    showNotification('Please enter a bill number to search', 'error');
+                    return;
+                }
+                
+                const results = database.bills.filter(bill => 
+                    bill.seriesNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    bill.id.toString() === searchTerm
+                );
+                
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state" style="margin: 20px 0;"><p>No bills found matching your search</p></div>';
+                    return;
+                }
+                
+                let html = '<div style="margin: 20px 0;"><h4 style="color: #2c3e50; margin-bottom: 15px;">Search Results</h4>';
+                
+                results.forEach(bill => {
+                    let itemsText = '';
+                    bill.items.slice(0, 3).forEach(item => {
+                        itemsText += `${item.name} (${item.quantity}), `;
+                    });
+                    
+                    if (bill.items.length > 3) {
+                        itemsText += `+${bill.items.length - 3} more`;
+                    } else {
+                        itemsText = itemsText.slice(0, -2);
+                    }
+                    
+                    html += `
+                        <div class="bill-item" style="margin-bottom: 15px;">
+                            <div class="bill-header">
+                                <span class="bill-id">${bill.seriesNo}</span>
+                                <span style="font-size: 0.9rem; color: #7f8c8d;">${bill.date}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555; margin: 5px 0;">${itemsText}</div>
+                            <div class="bill-total">${formatCurrency(bill.total)} (${bill.paymentMethod})</div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="btn" onclick="viewBillDetails(${bill.id})" style="padding: 8px 15px; font-size: 0.9rem; flex: 1;">
+                                    <i class="fas fa-eye"></i> View Details
+                                </button>
+                                <button class="btn btn-warning" onclick="printBillReceipt(${bill.id})" style="padding: 8px 15px; font-size: 0.9rem; flex: 1;">
+                                    <i class="fas fa-print"></i> Print Receipt
+                                </button>
+                                <button class="btn btn-success" onclick="downloadSpecificBillPDF(${bill.id})" style="padding: 8px 15px; font-size: 0.9rem; flex: 1;">
+                                    <i class="fas fa-download"></i> Download PDF
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            }
+
+            function clearBillSearch() {
+                document.getElementById('billSearchInput').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+            }
+
+            // Download sales report PDF
+            async function downloadSalesReportPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Header
+                doc.setFontSize(20);
+                doc.text(database.restaurantName + " - Sales Report", 14, 20);
+                
+                doc.setFontSize(11);
+                const now = new Date();
+                doc.text("Date: " + now.toLocaleDateString(), 14, 30);
+                doc.text("Time: " + now.toLocaleTimeString(), 14, 36);
+                
+                // Summary
+                doc.setFontSize(13);
+                doc.text("Sales Summary", 14, 50);
+                
+                doc.setFontSize(11);
+                doc.text("Total Sales: " + formatCurrency(database.todaySales), 14, 60);
+                doc.text("Total Bills: " + database.todayBills, 14, 66);
+                doc.text("Daily Target: " + formatCurrency(database.dailyTarget), 14, 72);
+                
+                const progress = Math.min((database.todaySales / database.dailyTarget) * 100, 100);
+                doc.text("Target Progress: " + progress.toFixed(1) + "%", 14, 78);
+                
+                // Payment Methods
+                doc.setFontSize(13);
+                doc.text("Payment Method Analysis", 14, 95);
+                
+                doc.setFontSize(11);
+                let yPos = 105;
+                
+                const paymentStats = getPaymentStats();
+                Object.keys(paymentStats).forEach(method => {
+                    const data = paymentStats[method];
+                    const percentage = database.todayBills > 0 ? (data.count / database.todayBills * 100).toFixed(1) : 0;
+                    
+                    doc.text(
+                        `${method}: ${data.count} bills (${percentage}%) - ${formatCurrency(data.amount)}`,
+                        16,
+                        yPos
+                    );
+                    yPos += 7;
+                });
+                
+                // Top Products
+                doc.setFontSize(13);
+                doc.text("Top Selling Products", 14, yPos + 10);
+                yPos += 20;
+                
+                doc.setFontSize(11);
+                const topProducts = getTopProducts(5);
+                topProducts.forEach((product, index) => {
+                    doc.text(
+                        `${index + 1}. ${product.name}: ${product.quantity} sold - ${formatCurrency(product.revenue)}`,
+                        16,
+                        yPos
+                    );
+                    yPos += 7;
+                });
+                
+                // Category Sales
+                doc.setFontSize(13);
+                doc.text("Sales by Category", 14, yPos + 10);
+                yPos += 20;
+                
+                doc.setFontSize(11);
+                const categories = Object.keys(database.categorySales);
+                const totalCategorySales = categories.reduce((sum, cat) => sum + database.categorySales[cat], 0);
+                
+                categories.forEach(category => {
+                    const sales = database.categorySales[category];
+                    const percentage = totalCategorySales > 0 ? (sales / totalCategorySales * 100).toFixed(1) : 0;
+                    
+                    doc.text(
+                        `${category}: ${formatCurrency(sales)} (${percentage}%)`,
+                        16,
+                        yPos
+                    );
+                    yPos += 7;
+                });
+                
+                // Footer
+                doc.setFontSize(9);
+                doc.text("Generated by Restaurant POS System", 105, 280, { align: 'center' });
+                
+                // Save PDF
+                const filename = `sales_report_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.pdf`;
+                doc.save(filename);
+                showNotification('Sales report PDF downloaded');
+            }
+
+            // Download specific bill as PDF
+            function downloadSpecificBillPDF(billId) {
+                const bill = database.bills.find(b => b.id === billId);
+                if (!bill) {
+                    showNotification('Bill not found', 'error');
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text(database.restaurantName.toUpperCase(), 105, 20, { align: 'center' });
+                
+                doc.setFontSize(10);
+                doc.text(`Bill No: ${bill.seriesNo}`, 20, 35);
+                doc.text(`Date: ${bill.date}`, 20, 40);
+                doc.text(`Payment Method: ${bill.paymentMethod}`, 20, 45);
+                
+                doc.line(20, 50, 190, 50);
+                
+                doc.setFontSize(12);
+                doc.text("Item", 20, 60);
+                doc.text("Qty", 100, 60);
+                doc.text("Price", 130, 60);
+                doc.text("Total", 160, 60);
+                
+                doc.line(20, 62, 190, 62);
+                
+                let yPos = 70;
+                
+                bill.items.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    
+                    doc.setFontSize(10);
+                    doc.text(item.name, 20, yPos);
+                    doc.text(item.quantity.toString(), 100, yPos);
+                    doc.text(`PKR ${item.price.toFixed(2)}`, 130, yPos);
+                    doc.text(`PKR ${itemTotal.toFixed(2)}`, 160, yPos);
+                    
+                    yPos += 8;
+                });
+                
+                yPos += 10;
+                doc.line(20, yPos, 190, yPos);
+                yPos += 10;
+                
+                doc.text("Subtotal:", 130, yPos);
+                doc.text(`PKR ${bill.subtotal.toFixed(2)}`, 160, yPos);
+                
+                yPos += 8;
+                doc.text(`Tax (${bill.taxRate}%):`, 130, yPos);
+                doc.text(`PKR ${bill.tax.toFixed(2)}`, 160, yPos);
+                
+                yPos += 8;
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text("TOTAL:", 130, yPos);
+                doc.text(`PKR ${bill.total.toFixed(2)}`, 160, yPos);
+                
+                yPos += 20;
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'normal');
+                doc.text("Thank you for your business!", 105, yPos, { align: 'center' });
+                
+                doc.save(`${bill.seriesNo}.pdf`);
+                showNotification('PDF download started');
+            }
+
+            // Modal functions
+            function openCustomItemModal() {
+                document.getElementById('customItemModal').style.display = 'flex';
+            }
+
+            function openBillSearch() {
+                document.getElementById('billSearchInput').focus();
+                document.querySelector('[data-tab="analytics"]').click();
+            }
+
+            function closeModal(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            }
+
+            // Custom item form
+            document.getElementById('customItemForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('customItemName').value.trim();
+                const price = parseFloat(document.getElementById('customItemPrice').value);
+                const quantity = parseInt(document.getElementById('customItemQuantity').value) || 1;
+                
+                if (!name || isNaN(price) || price <= 0) {
+                    showNotification('Please enter valid item details', 'error');
+                    return;
+                }
+                
+                const customItem = {
+                    id: Date.now(),
+                    name: name,
+                    price: price,
+                    quantity: quantity,
+                    category: 'Custom'
+                };
+                
+                currentOrder.push(customItem);
+                updateOrderDisplay();
+                updateInvoice();
+                
+                closeModal('customItemModal');
+                document.getElementById('customItemForm').reset();
+                showNotification(`${quantity} × ${name} added to order`);
+            });
+
+            // View bill details
+            function viewBillDetails(billId) {
+                const bill = database.bills.find(b => b.id === billId);
+                if (!bill) return;
+                
+                let details = `Bill ${bill.seriesNo}\n`;
+                details += `Date: ${bill.date}\n`;
+                details += `Payment: ${bill.paymentMethod}\n`;
+                details += `Tax Rate: ${bill.taxRate}%\n\n`;
+                details += 'Items:\n';
+                
+                bill.items.forEach(item => {
+                    details += `${item.name} × ${item.quantity} = PKR ${(item.price * item.quantity).toFixed(2)}\n`;
+                });
+                
+                details += `\nSubtotal: PKR ${bill.subtotal.toFixed(2)}\n`;
+                details += `Tax (${bill.taxRate}%): PKR ${bill.tax.toFixed(2)}\n`;
+                details += `Total: PKR ${bill.total.toFixed(2)}`;
+                
+                alert(details);
+            }
+
+            // Initialize
+            function init() {
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                
+                document.getElementById('restaurantNameDisplay').textContent = database.restaurantName;
+                document.getElementById('invoiceRestaurantName').textContent = database.restaurantName.toUpperCase();
+                document.getElementById('taxLabel').textContent = `Tax (${database.currentTaxRate}%)`;
+                document.getElementById('dailyTargetDisplay').textContent = formatCurrency(database.dailyTarget);
+                
+                updatePaymentMethodsUI();
+                renderItems();
+                updateOrderDisplay();
+                updateInvoice();
+                updateAdminDashboard();
+                updateAnalytics();
+                renderCharts();
+                
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.style.display = 'none';
+                        }
+                    });
+                });
+                
+                document.addEventListener('click', function(event) {
+                    const dropdown = document.getElementById('settingsDropdown');
+                    const settingsBtn = document.querySelector('.settings-btn');
+                    
+                    if (dropdown.classList.contains('show') && 
+                        !dropdown.contains(event.target) && 
+                        !settingsBtn.contains(event.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+            }
+
+            // Start application
+            init();
+</script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_7W3o4N_bUkWfR-f6Moxy74dUtEiAGIY",
+    authDomain: "rcm-and-pos.firebaseapp.com",
+    projectId: "rcm-and-pos",
+    storageBucket: "rcm-and-pos.firebasestorage.app",
+    messagingSenderId: "94492636529",
+    appId: "1:94492636529:web:4d6b855c3c0d01f282b2d0",
+    measurementId: "G-59MFM1NQJK"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+    </body>
+</html>
